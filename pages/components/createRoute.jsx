@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
-export default function CreateRoute() {
+export default function CreateRoute({ onBack }) {
   const [shift, setShift] = useState('Morning');
   const [deliveryManName, setDeliveryManName] = useState('');
   const [selectedDeliveryManId, setSelectedDeliveryManId] = useState('');
@@ -83,6 +83,15 @@ export default function CreateRoute() {
 
   return (
     <div className="max-w-md mx-auto mt-8">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Create Route</h2>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+        >
+          Back
+        </button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="shift" className="block text-sm font-medium text-gray-700">

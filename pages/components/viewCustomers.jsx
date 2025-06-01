@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
-export default function ViewCustomers() {
+export default function ViewCustomers({ onBack }) {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -130,7 +130,15 @@ export default function ViewCustomers() {
 
   return (
     <div className="max-w-4xl mx-auto mt-8 px-4">
-      <h2 className="text-2xl font-bold mb-6">Customers</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Customers</h2>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+        >
+          Back
+        </button>
+      </div>
       <div className="grid gap-6">
         {customers.map((customer) => (
           <div key={customer.id} className="bg-white shadow rounded-lg p-6">
