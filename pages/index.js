@@ -56,6 +56,11 @@ export default function Home() {
                 icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               },
               {
+                title: "View Customers",
+                onClick: () => setShowViewCustomers(true),
+                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              },
+              {
                 title: "Add Delivery Man",
                 onClick: () => setShowAddDeliveryMan(true),
                 icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
@@ -69,11 +74,6 @@ export default function Home() {
                 title: "View Routes",
                 onClick: () => setShowViewRoutes(true),
                 icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              },
-              {
-                title: "View Customers",
-                onClick: () => setShowViewCustomers(true),
-                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               }
             ].map((item, index) => (
               <button
@@ -93,9 +93,9 @@ export default function Home() {
             {showAddItems ? <AddItems onBack={handleBack} /> :
              showViewItems ? <ViewItems onBack={handleBack} /> :
              showAddCustomer ? <AddCustomer onBack={handleBack} /> :
+             showViewCustomers ? <ViewCustomers onBack={handleBack} /> :
              showCreateRoute ? <CreateRoute onBack={handleBack} /> :
              showViewRoutes ? <ViewRoutes onBack={handleBack} /> :
-             showViewCustomers ? <ViewCustomers onBack={handleBack} /> :
              <CreateDeliveryMan onBack={handleBack} />}
           </div>
         )}
