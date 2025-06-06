@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from '../lib/auth';
 import AddItems from "./components/addItems";
 import AddCustomer from "./components/addCustomer";
 import CreateDeliveryMan from "./components/createDeliveryMan";
@@ -13,14 +14,21 @@ export default function Home() {
   const [showCreateRoute, setShowCreateRoute] = useState(false);
   const [showViewRoutes, setShowViewRoutes] = useState(false);
   const [showViewCustomers, setShowViewCustomers] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen border-[15px] border-gray-800 bg-[url('/images/bg.png')] bg-cover bg-center bg-fixed">
       <nav className="top-0 z-50 w-full bg-white border border-gray-800">
-        <div className="mx-auto lg:max-w-[1300px] px-4 md:px-8 py-4">
-          <h1 className="text-center italic text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">
+        <div className="mx-auto lg:max-w-[1300px] px-4 md:px-8 py-4 flex justify-between items-center">
+          <h1 className="italic text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">
             Dairy Management System
           </h1>
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
