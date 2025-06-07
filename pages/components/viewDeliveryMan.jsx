@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 
 export default function ViewDeliveryMan({ onBack }) {
   const [deliveryMen, setDeliveryMen] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    deliveryManName: '',
+    phone: '',
+    address: '',
+    route: ''
+  });
   const [editForm, setEditForm] = useState({
     deliveryManName: '',
     phone: '',
@@ -88,6 +95,30 @@ export default function ViewDeliveryMan({ onBack }) {
     }
   };
 
+  const handleCreate = async () => {
+    try {
+      // Validate form fields
+      if (!createForm.deliveryManName || !createForm.phone) {
+        showMessage('Name and phone are required', 'error');
+        return;
+      }
+
+      const docRef = await addDoc(collection(db, 'Delivery'), createForm);
+      showMessage('Delivery man created successfully', 'success');
+      setShowCreateForm(false);
+      setCreateForm({
+        deliveryManName: '',
+        phone: '',
+        address: '',
+        route: ''
+      });
+      fetchDeliveryMen();
+    } catch (error) {
+      console.error('Error creating delivery man:', error);
+      showMessage('Failed to create delivery man: ' + error.message, 'error');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4">
       {message.text && (
@@ -102,13 +133,77 @@ export default function ViewDeliveryMan({ onBack }) {
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Delivery Men</h2>
-        <button
-          onClick={onBack}
-          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-        >
-          Back
-        </button>
+        <div className="space-x-2">
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            {showCreateForm ? 'Cancel' : 'Add New Delivery Man'}
+          </button>
+          <button
+            onClick={onBack}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+          >
+            Back
+          </button>
+        </div>
       </div>
+
+      {showCreateForm && (
+        <div className="bg-white p-6 rounded shadow-md mb-6">
+          <h3 className="text-xl font-semibold mb-4">Add New Delivery Man</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-gray-700 mb-2">Name *</label>
+              <input
+                type="text"
+                value={createForm.deliveryManName}
+                onChange={(e) => setCreateForm({ ...createForm, deliveryManName: e.target.value })}
+                className="border rounded px-3 py-2 w-full"
+                placeholder="Enter name"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Phone *</label>
+              <input
+                type="text"
+                value={createForm.phone}
+                onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                className="border rounded px-3 py-2 w-full"
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Address</label>
+              <input
+                type="text"
+                value={createForm.address}
+                onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
+                className="border rounded px-3 py-2 w-full"
+                placeholder="Enter address"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Route</label>
+              <input
+                type="text"
+                value={createForm.route}
+                onChange={(e) => setCreateForm({ ...createForm, route: e.target.value })}
+                className="border rounded px-3 py-2 w-full"
+                placeholder="Enter route"
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <button
+              onClick={handleCreate}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Create Delivery Man
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         {deliveryMen.length === 0 ? (
