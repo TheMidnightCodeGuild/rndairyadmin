@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from '../lib/auth';
 import AddItems from "./components/addItems";
+import ViewItems from "./components/viewItems";
 import AddCustomer from "./components/addCustomer";
 import CreateDeliveryMan from "./components/createDeliveryMan";
 import CreateRoute from "./components/createRoute";
@@ -10,6 +11,7 @@ import ViewDeliveryMan from "./components/viewDeliveryMan";
 
 export default function Home() {
   const [showAddItems, setShowAddItems] = useState(false);
+  const [showViewItems, setShowViewItems] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [showAddDeliveryMan, setShowAddDeliveryMan] = useState(false);
   const [showCreateRoute, setShowCreateRoute] = useState(false);
@@ -17,6 +19,16 @@ export default function Home() {
   const [showViewCustomers, setShowViewCustomers] = useState(false);
   const [showViewDeliveryMan, setShowViewDeliveryMan] = useState(false);
   const { logout } = useAuth();
+
+  const handleBack = () => {
+    setShowAddItems(false);
+    setShowViewItems(false);
+    setShowAddCustomer(false);
+    setShowAddDeliveryMan(false);
+    setShowCreateRoute(false);
+    setShowViewRoutes(false);
+    setShowViewCustomers(false);
+  };
 
   return (
     <div className="min-h-screen border-[15px] border-gray-800 bg-[url('/images/bg.png')] bg-cover bg-center bg-fixed">
@@ -35,13 +47,18 @@ export default function Home() {
       </nav>
 
       <main className="mx-auto lg:max-w-[1300px] p-4 md:p-8">
-        {!showAddItems && !showAddCustomer && !showAddDeliveryMan && !showCreateRoute && !showViewRoutes && !showViewCustomers && !showViewDeliveryMan ? (
+{!showAddItems && !showViewItems && !showAddCustomer && !showAddDeliveryMan && !showCreateRoute && !showViewRoutes && !showViewCustomers && !showViewDeliveryMan ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               {
                 title: "Add Item",
                 onClick: () => setShowAddItems(true),
                 icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              },
+              {
+                title: "View Items",
+                onClick: () => setShowViewItems(true),
+                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               },
               {
                 title: "Add Customer",
@@ -88,13 +105,15 @@ export default function Home() {
           </div>
         ) : (
           <div className="bg-white/20 backdrop-blur-sm px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-10 mt-5 shadow-lg border border-gray-800 overflow-x-auto">
-            {showAddItems ? <AddItems onBack={() => setShowAddItems(false)} /> :
-             showAddCustomer ? <AddCustomer onBack={() => setShowAddCustomer(false)} /> :
-             showCreateRoute ? <CreateRoute onBack={() => setShowCreateRoute(false)} /> :
-             showViewRoutes ? <ViewRoutes onBack={() => setShowViewRoutes(false)} /> :
-             showViewCustomers ? <ViewCustomers onBack={() => setShowViewCustomers(false)} /> :
-             showViewDeliveryMan ? <ViewDeliveryMan onBack={() => setShowViewDeliveryMan(false)} /> :
-             <CreateDeliveryMan onBack={() => setShowAddDeliveryMan(false)} />}
+{showAddItems ? <AddItems onBack={handleBack} /> :
+ showViewItems ? <ViewItems onBack={handleBack} /> :
+ showAddCustomer ? <AddCustomer onBack={handleBack} /> :
+ showViewCustomers ? <ViewCustomers onBack={handleBack} /> :
+ showCreateRoute ? <CreateRoute onBack={handleBack} /> :
+ showViewRoutes ? <ViewRoutes onBack={handleBack} /> :
+ showViewDeliveryMan ? <ViewDeliveryMan onBack={handleBack} /> :
+ showAddDeliveryMan ? <CreateDeliveryMan onBack={handleBack} /> :
+ null}
           </div>
         )}
       </main>
