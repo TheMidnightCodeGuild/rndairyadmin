@@ -7,6 +7,7 @@ import CreateDeliveryMan from "./components/createDeliveryMan";
 import CreateRoute from "./components/createRoute";
 import ViewRoutes from "./components/viewRoutes";
 import ViewCustomers from "./components/viewCustomers";
+import ViewDeliveryMan from "./components/viewDeliveryMan";
 
 export default function Home() {
   const [showAddItems, setShowAddItems] = useState(false);
@@ -16,6 +17,7 @@ export default function Home() {
   const [showCreateRoute, setShowCreateRoute] = useState(false);
   const [showViewRoutes, setShowViewRoutes] = useState(false);
   const [showViewCustomers, setShowViewCustomers] = useState(false);
+  const [showViewDeliveryMan, setShowViewDeliveryMan] = useState(false);
   const { logout } = useAuth();
 
   const handleBack = () => {
@@ -45,7 +47,7 @@ export default function Home() {
       </nav>
 
       <main className="mx-auto lg:max-w-[1300px] p-4 md:p-8">
-        {!showAddItems && !showViewItems && !showAddCustomer && !showAddDeliveryMan && !showCreateRoute && !showViewRoutes && !showViewCustomers ? (
+{!showAddItems && !showViewItems && !showAddCustomer && !showAddDeliveryMan && !showCreateRoute && !showViewRoutes && !showViewCustomers && !showViewDeliveryMan ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               {
@@ -74,6 +76,11 @@ export default function Home() {
                 icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
               },
               {
+                title: "View Delivery Men",
+                onClick: () => setShowViewDeliveryMan(true),
+                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              },
+              {
                 title: "Create Route",
                 onClick: () => setShowCreateRoute(true),
                 icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -98,13 +105,15 @@ export default function Home() {
           </div>
         ) : (
           <div className="bg-white/20 backdrop-blur-sm px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-10 mt-5 shadow-lg border border-gray-800 overflow-x-auto">
-            {showAddItems ? <AddItems onBack={handleBack} /> :
-             showViewItems ? <ViewItems onBack={handleBack} /> :
-             showAddCustomer ? <AddCustomer onBack={handleBack} /> :
-             showViewCustomers ? <ViewCustomers onBack={handleBack} /> :
-             showCreateRoute ? <CreateRoute onBack={handleBack} /> :
-             showViewRoutes ? <ViewRoutes onBack={handleBack} /> :
-             <CreateDeliveryMan onBack={handleBack} />}
+{showAddItems ? <AddItems onBack={handleBack} /> :
+ showViewItems ? <ViewItems onBack={handleBack} /> :
+ showAddCustomer ? <AddCustomer onBack={handleBack} /> :
+ showViewCustomers ? <ViewCustomers onBack={handleBack} /> :
+ showCreateRoute ? <CreateRoute onBack={handleBack} /> :
+ showViewRoutes ? <ViewRoutes onBack={handleBack} /> :
+ showViewDeliveryMan ? <ViewDeliveryMan onBack={handleBack} /> :
+ showAddDeliveryMan ? <CreateDeliveryMan onBack={handleBack} /> :
+ null}
           </div>
         )}
       </main>
