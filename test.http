@@ -1,0 +1,21 @@
+POST http://localhost:3000/api/createCustomer
+Content-Type: application/json
+
+{
+  "customerName": "John Doe",
+  "mobile": "9876543210",
+  "address": "123 Main Street, City",
+  "route": "Route A",
+  "subscriptionItems": [
+    {
+      "itemId": "milk",
+      "quantity": 2,
+      "rate": 60
+    },
+    {
+      "itemId": "curd",
+      "quantity": 1,
+      "rate": 40
+    }
+  ]
+} 
