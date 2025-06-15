@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useRouter } from 'next/router';
 
 export default function ViewCustomers({ onBack }) {
   const [customers, setCustomers] = useState([]);
@@ -16,6 +17,7 @@ export default function ViewCustomers({ onBack }) {
   const [items, setItems] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchCustomersAndItems = async () => {
@@ -285,6 +287,12 @@ export default function ViewCustomers({ onBack }) {
                         </>
                       ) : (
                         <>
+                          <button
+                            onClick={() => router.push(`/delivery-planner/${customer.id}`)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Plan Deliveries
+                          </button>
                           <button
                             onClick={() => handleEdit(customer)}
                             className="text-indigo-600 hover:text-indigo-900"

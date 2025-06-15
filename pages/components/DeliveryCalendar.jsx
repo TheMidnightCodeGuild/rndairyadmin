@@ -20,11 +20,13 @@ export default function DeliveryCalendar({
         // Format month with leading zero if needed
         const monthStr = selectedMonth.toString().padStart(2, '0');
         // Create the prefix for the current month
-        const prefixStart = `${customerId}_${selectedYear}-${monthStr}`;
+        //const prefixStart = `${customerId}_${selectedYear}-${monthStr}`;
+        const prefixStart = `${customerId}_${selectedYear}-${monthStr}-01`;
         // Create the prefix for the next month (for range end)
         const nextMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
         const nextYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
-        const prefixEnd = `${customerId}_${nextYear}-${nextMonth.toString().padStart(2, '0')}`;
+        //const prefixEnd = `${customerId}_${nextYear}-${nextMonth.toString().padStart(2, '0')}`;
+        const prefixEnd = `${customerId}_${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
 
         // Query for documents where ID starts with the prefix
         const q = query(
