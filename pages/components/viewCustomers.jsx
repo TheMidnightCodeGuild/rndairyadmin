@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useRouter } from 'next/router';
 
 export default function ViewCustomers({ onBack }) {
+  const router = useRouter();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -298,7 +300,11 @@ export default function ViewCustomers({ onBack }) {
                             Delete
                           </button>
                           <button
-                            onClick={() => alert('Plan Deliveries for ' + customer.customerName)}
+                            onClick={() =>
+                              router.push(
+  `/components/planDelivery?customer=${encodeURIComponent(customer.customerName)}&month=${new Date().toISOString().slice(0, 7)}`
+)
+                            }
                             className="text-blue-600 hover:text-blue-900"
                           >
                             Plan Deliveries
