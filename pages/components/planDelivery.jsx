@@ -79,22 +79,22 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
         />
       </div>
 
-      <div className="bg-white/90 backdrop-blur-sm shadow-lg border border-gray-800 rounded-xl p-6">
+      <div className="mt-2">
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-px mb-1">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
-            <div key={wd} className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div key={wd} className="text-center text-xs font-medium text-gray-500 py-2">
               {wd}
             </div>
           ))}
         </div>
         {/* Calendar days grid */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-px bg-gray-100">
           {/* Add empty divs for days before the 1st of the month */}
           {(() => {
             const firstDayOfWeek = dayjs(month + '-01').day();
             return Array.from({ length: firstDayOfWeek }).map((_, i) => (
-              <div key={`empty-${i}`} className="" />
+              <div key={`empty-${i}`} className="bg-white border border-gray-200 min-w-[90px] min-h-[90px]" />
             ));
           })()}
           {days.map((day) => {
@@ -102,43 +102,27 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
             return (
               <div
                 key={day}
-                className={`relative border border-gray-200 bg-white rounded-lg p-4 text-center font-medium cursor-pointer transition-all duration-200 shadow-sm hover:bg-blue-50 hover:border-blue-400 group flex flex-col items-center justify-between min-h-[110px]`}
+                className={`relative bg-white border border-gray-200 min-w-[90px] min-h-[90px] flex flex-col items-center justify-start p-1 transition-colors duration-150 hover:bg-gray-50 ${isToday ? 'border-blue-500' : ''}`}
               >
-                <span className={`text-lg ${isToday ? 'text-blue-700 font-bold' : 'text-gray-800'}`}>{day}</span>
-                {isToday && (
-                  <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full shadow">Today</span>
-                )}
-                {/* Action buttons */}
-                <div className="flex justify-center gap-2 mt-4">
-                  {/* Tick (Complete) */}
+                <span className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{day}</span>
+                <div className="flex flex-row gap-1 items-center mt-auto mb-1">
                   <button
                     type="button"
-                    className="p-1.5 rounded-full bg-green-100 hover:bg-green-200 text-green-700 hover:text-green-900 transition-colors duration-200 shadow-sm"
-                    title="Mark as Complete"
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors duration-150"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    ✅
                   </button>
-                  {/* Cross (Rejected) */}
                   <button
                     type="button"
-                    className="p-1.5 rounded-full bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-900 transition-colors duration-200 shadow-sm"
-                    title="Mark as Rejected"
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    ❌
                   </button>
-                  {/* Pencil (Edit) */}
                   <button
                     type="button"
-                    className="p-1.5 rounded-full bg-yellow-100 hover:bg-yellow-200 text-yellow-700 hover:text-yellow-900 transition-colors duration-200 shadow-sm"
-                    title="Edit"
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 transition-colors duration-150"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6m2-2l-6 6" />
-                    </svg>
+                    ✏️
                   </button>
                 </div>
               </div>
