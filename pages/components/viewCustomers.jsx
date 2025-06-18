@@ -297,6 +297,12 @@ export default function ViewCustomers({ onBack }) {
                           >
                             Delete
                           </button>
+                          <button
+                            onClick={() => alert('Plan Deliveries for ' + customer.customerName)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Plan Deliveries
+                          </button>
                         </>
                       )}
                     </td>
