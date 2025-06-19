@@ -2,46 +2,36 @@ import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/router';
 import { db } from '../../lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, Timestamp, query, where } from 'firebase/firestore';
 
 export default function DeliveryPlanner({ customerName, selectedMonth }) {
   const router = useRouter();
-  const [customer, setCustomer] = useState('');
+  const [customerId, setCustomerId] = useState('');
   const [month, setMonth] = useState(selectedMonth || dayjs().format('YYYY-MM'));
   const [days, setDays] = useState([]);
+  const [overridesMap, setOverridesMap] = useState({});
   const [customerData, setCustomerData] = useState(null);
-
+  const [isLoadingOverrides, setIsLoadingOverrides] = useState(true);
+  const [customer, setCustomer] = useState('');
   // Read from query params if available
   useEffect(() => {
     if (router.isReady) {
       const queryCustomer = router.query.customer;
       const queryMonth = router.query.month;
+      const queryCustomerId = router.query.customerId;
+    
       if (queryCustomer) {
         setCustomer(queryCustomer);
       }
       if (queryMonth) {
         setMonth(queryMonth);
       }
+      if (queryCustomerId) {
+        setCustomerId(queryCustomerId);
+        setCustomerData((prev) => ({ ...prev, id: queryCustomerId }));
+      }
     }
   }, [router.isReady, router.query.customer, router.query.month]);
-
-  // Fetch customer data if customer name is present
-  useEffect(() => {
-    const fetchCustomerData = async () => {
-      if (customer) {
-        const customersSnapshot = await getDocs(collection(db, 'Customers'));
-        const found = customersSnapshot.docs.find(doc => doc.data().customerName === customer);
-        if (found) {
-          setCustomerData(found.data());
-        } else {
-          setCustomerData(null);
-        }
-      } else {
-        setCustomerData(null);
-      }
-    };
-    fetchCustomerData();
-  }, [customer]);
 
   useEffect(() => {
     const [year, monthNum] = month.split('-');
@@ -49,6 +39,83 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
     const daysArr = Array.from({ length: totalDays }, (_, i) => i + 1);
     setDays(daysArr);
   }, [month]);
+
+  useEffect(() => {
+    const fetchOverrides = async () => {
+      if (!customerId || !month) {
+        console.log("No customerId or month");
+        return;
+      }
+      setIsLoadingOverrides(true);
+      const startDate = `${month}-01`;
+      const endDate = `${month}-${String(dayjs(month + '-01').daysInMonth()).padStart(2, '0')}`;
+  
+      console.log("Querying overrides for ID:", customerData.id);
+      console.log("Start:", startDate, "End:", endDate);
+  
+      const q = query(
+        collection(db, 'overrides'),
+        where('customerId', '==', customerId),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate)
+      );
+  
+      const snapshot = await getDocs(q);
+      console.log("Overrides fetched:", snapshot.size);
+  
+      const map = {};
+      snapshot.forEach(doc => {
+        map[doc.data().date] = doc.data();
+      });
+      setOverridesMap(map);
+      setIsLoadingOverrides(false);
+    };
+  
+    fetchOverrides();
+  }, [customerId, month]); // ← changed dependency!
+
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!customer || customerId) return;
+      const snapshot = await getDocs(collection(db, 'Customers'));
+      const found = snapshot.docs.find(
+        doc => doc.data().customerName?.toLowerCase() === customer.toLowerCase()
+      );
+      if (found) {
+        setCustomerData({ ...found.data(), id: found.id });
+      } else {
+        setCustomerData(null);
+      }
+    };
+    fetchCustomer();
+  }, [customer]);
+
+  const handleMarkDelivered = async (day) => {
+    if (!customerData) {
+      alert('No customer data found!');
+      return;
+    }
+    // You may need to manually set the customerId if not present in customerData
+    const idToUse = customerId || customerData?.id || 'SET_THIS_MANUALLY';
+    const dateStr = `${month}-${String(day).padStart(2, '0')}`;
+    const docId = `${idToUse}_${dateStr}`;
+    try {
+      await setDoc(
+        doc(collection(db, 'overrides'), docId),
+        {
+          customerId: idToUse,
+          date: dateStr,
+          status: 'delivered',
+          items: customerData.dailyDeliveryItems || [],
+          updatedAt: Timestamp.now(),
+        }
+      );
+      alert('Marked as delivered!');
+    } catch (err) {
+      console.error('Error marking as delivered:', err);
+      alert('Failed to mark as delivered.');
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -81,6 +148,14 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
 
       <div className="mt-2">
         {/* Weekday headers */}
+        {isLoadingOverrides ? (
+            <div>Loading...</div>
+                 ) : Object.keys(overridesMap).length > 0 ? (
+        <div>Overrides Loaded</div>
+        ) : (
+            <div>No Overrides</div>
+            )}
+
         <div className="grid grid-cols-7 gap-px mb-1">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
             <div key={wd} className="text-center text-xs font-medium text-gray-500 py-2">
@@ -99,15 +174,23 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
           })()}
           {days.map((day) => {
             const isToday = dayjs().isSame(dayjs(`${month}-${String(day).padStart(2, '0')}`), 'day');
+            const dateStr = `${month}-${String(day).padStart(2, '0')}`;
+            const override = overridesMap[dateStr];
+            let dayBg = '';
+            if (override?.status === 'delivered') dayBg = 'bg-green-100';
+            else if (override?.status === 'skipped') dayBg = 'bg-red-100';
+
             return (
               <div
                 key={day}
-                className={`relative bg-white border border-gray-200 min-w-[90px] min-h-[90px] flex flex-col items-center justify-start p-1 transition-colors duration-150 hover:bg-gray-50 ${isToday ? 'border-blue-500' : ''}`}
+                className={`relative bg-white border border-gray-200 min-w-[90px] min-h-[90px] flex flex-col items-center justify-start p-1 transition-colors duration-150 hover:bg-gray-50 ${isToday ? 'border-blue-500' : ''} ${dayBg}`}
               >
+                {override?.status}
                 <span className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{day}</span>
                 <div className="flex flex-row gap-1 items-center mt-auto mb-1">
                   <button
                     type="button"
+                    onClick={() => handleMarkDelivered(day)}
                     className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors duration-150"
                   >
                     ✅

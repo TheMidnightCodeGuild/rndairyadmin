@@ -302,8 +302,8 @@ export default function ViewCustomers({ onBack }) {
                           <button
                             onClick={() =>
                               router.push(
-  `/components/planDelivery?customer=${encodeURIComponent(customer.customerName)}&month=${new Date().toISOString().slice(0, 7)}`
-)
+                                `/components/planDelivery?customerId=${customer.id}&month=${new Date().toISOString().slice(0, 7)}`
+                              )
                             }
                             className="text-blue-600 hover:text-blue-900"
                           >
