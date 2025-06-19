@@ -117,6 +117,45 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
     }
   };
 
+  const handleMarkRejected = async (day) => {
+    if (!customerData) {
+      alert('No customer data found!');
+      return;
+    }
+  
+    const idToUse = customerId || customerData?.id || 'SET_THIS_MANUALLY';
+    const dateStr = `${month}-${String(day).padStart(2, '0')}`;
+    const docId = `${idToUse}_${dateStr}`;
+  
+    try {
+      await setDoc(
+        doc(collection(db, 'overrides'), docId),
+        {
+          customerId: idToUse,
+          date: dateStr,
+          status: 'skipped',
+          items: customerData.dailyDeliveryItems || [],
+          updatedAt: Timestamp.now(),
+        }
+      );
+      alert('Marked as skipped!');
+      // Refresh override state manually if needed
+      setOverridesMap((prev) => ({
+        ...prev,
+        [dateStr]: {
+          customerId: idToUse,
+          date: dateStr,
+          status: 'skipped',
+          items: customerData.dailyDeliveryItems || [],
+          updatedAt: Timestamp.now(),
+        },
+      }));
+    } catch (err) {
+      console.error('Error marking as skipped:', err);
+      alert('Failed to mark as skipped.');
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Show customer and month-year heading if available */}
@@ -176,6 +215,9 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
             const isToday = dayjs().isSame(dayjs(`${month}-${String(day).padStart(2, '0')}`), 'day');
             const dateStr = `${month}-${String(day).padStart(2, '0')}`;
             const override = overridesMap[dateStr];
+            const thisDate = dayjs(dateStr);
+            const currentDate = dayjs();
+            const isPastOrToday = thisDate.isSame(currentDate, 'day') || thisDate.isBefore(currentDate, 'day');
             let dayBg = '';
             if (override?.status === 'delivered') dayBg = 'bg-green-100';
             else if (override?.status === 'skipped') dayBg = 'bg-red-100';
@@ -196,11 +238,12 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
                     ✅
                   </button>
                   <button
-                    type="button"
-                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150"
+                   type="button"
+                   onClick={() => handleMarkRejected(day)}
+                   className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150"
                   >
-                    ❌
-                  </button>
+                  ❌
+                 </button>
                   <button
                     type="button"
                     className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 transition-colors duration-150"
