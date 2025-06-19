@@ -232,11 +232,11 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
                 <div className="flex flex-row gap-1 items-center mt-auto mb-1">
                   <button
                     type="button"
-                    onClick={() => handleMarkDelivered(day)}
-                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors duration-150"
+                    disabled
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400 border border-gray-300 cursor-not-allowed"
                   >
                     ✅
-                  </button>
+                  </button> 
                   <button
                    type="button"
                    onClick={() => handleMarkRejected(day)}
