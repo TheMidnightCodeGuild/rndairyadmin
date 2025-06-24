@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/router';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, setDoc, doc, Timestamp, query, where } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, Timestamp, query, where, getDoc } from 'firebase/firestore';
 import { generateBillForCustomer } from '@/utils/generateBill';
-import { getDoc } from 'firebase/firestore';
-import CustomerBills from './customerBills';
 
-export default function DeliveryPlanner({ customerName, selectedMonth }) {
+export default function DeliveryPlanner({ selectedMonth }) {
   const router = useRouter();
   const [customerId, setCustomerId] = useState('');
   const [month, setMonth] = useState(selectedMonth || dayjs().format('YYYY-MM'));
@@ -15,143 +13,150 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
   const [overridesMap, setOverridesMap] = useState({});
   const [customerData, setCustomerData] = useState(null);
   const [isLoadingOverrides, setIsLoadingOverrides] = useState(true);
-  const [generatedBill, setGeneratedBill] = useState(null);
   const [isGeneratingBill, setIsGeneratingBill] = useState(false);
   const [customer, setCustomer] = useState('');
+
+  // Utility function for date string
+  const getDateStr = (day) => `${month}-${String(day).padStart(2, '0')}`;
+
   // Read from query params if available
   useEffect(() => {
     if (router.isReady) {
       const queryCustomer = router.query.customer;
       const queryMonth = router.query.month;
       const queryCustomerId = router.query.customerId;
-    
-      if (queryCustomer) {
-        setCustomer(queryCustomer);
-      }
-      if (queryMonth) {
-        setMonth(queryMonth);
-      }
-      if (queryCustomerId) {
-        setCustomerId(queryCustomerId);
-        setCustomerData((prev) => ({ ...prev, id: queryCustomerId }));
-      }
-    }
-  }, [router.isReady, router.query.customer, router.query.month]);
 
+      if (queryCustomer) setCustomer(queryCustomer);
+      if (queryMonth) setMonth(queryMonth);
+      if (queryCustomerId) setCustomerId(queryCustomerId);
+    }
+  }, [router.isReady, router.query.customer, router.query.month, router.query.customerId]);
+
+  // Set days in month
   useEffect(() => {
     const [year, monthNum] = month.split('-');
     const totalDays = dayjs(`${year}-${monthNum}-01`).daysInMonth();
-    const daysArr = Array.from({ length: totalDays }, (_, i) => i + 1);
-    setDays(daysArr);
+    setDays(Array.from({ length: totalDays }, (_, i) => i + 1));
   }, [month]);
 
+  // Fetch overrides for the month
   useEffect(() => {
     const fetchOverrides = async () => {
-      if (!customerId || !month) {
-        console.log("No customerId or month");
-        return;
-      }
+      if (!customerId || !month) return;
       setIsLoadingOverrides(true);
       const startDate = `${month}-01`;
       const endDate = `${month}-${String(dayjs(month + '-01').daysInMonth()).padStart(2, '0')}`;
-  
-      console.log("Querying overrides for ID:", customerData.id);
-      console.log("Start:", startDate, "End:", endDate);
-  
+
       const q = query(
         collection(db, 'overrides'),
         where('customerId', '==', customerId),
         where('date', '>=', startDate),
         where('date', '<=', endDate)
       );
-  
+
       const snapshot = await getDocs(q);
-      console.log("Overrides fetched:", snapshot.size);
-  
       const map = {};
       snapshot.forEach(doc => {
-        map[doc.data().date] = doc.data();
+        // Always use lowercase for status
+        const data = doc.data();
+        map[data.date] = { ...data, status: data.status?.toLowerCase() };
       });
       setOverridesMap(map);
       setIsLoadingOverrides(false);
     };
-  
-    fetchOverrides();
-  }, [customerId, month]); // ← changed dependency!
 
+    fetchOverrides();
+  }, [customerId, month]);
+
+  // Fetch customer data
   useEffect(() => {
     const fetchCustomer = async () => {
       if (!customerId) return;
-  
       const customerRef = doc(db, 'Customers', customerId);
       const snap = await getDoc(customerRef);
       if (snap.exists()) {
         setCustomerData({ id: snap.id, ...snap.data() });
       } else {
-        console.warn('Customer not found');
+        setCustomerData(null);
       }
     };
     fetchCustomer();
   }, [customerId]);
 
+  // Ensure customerId is always from customerData after fetch
+  useEffect(() => {
+    if (customerData?.id && customerId !== customerData.id) {
+      setCustomerId(customerData.id);
+    }
+  }, [customerData, customerId]);
+
   const handleMarkDelivered = async (day) => {
     if (!customerData) {
-      alert('No customer data found!');
+      // TODO: replace with toast
+      console.log('No customer data found!');
       return;
     }
     if (!customerData.dailyDeliveryItems || customerData.dailyDeliveryItems.length === 0) {
-      alert('No daily items found for this customer.');
+      // TODO: replace with toast
+      console.log('No daily items found for this customer.');
       return;
     }
-    // You may need to manually set the customerId if not present in customerData
-    const idToUse = customerId || customerData?.id || 'SET_THIS_MANUALLY';
-    const dateStr = `${month}-${String(day).padStart(2, '0')}`;
-    const docId = `${idToUse}_${dateStr}`;
+    const dateStr = getDateStr(day);
+    const docId = `${customerId}_${dateStr}`;
     try {
       await setDoc(
         doc(collection(db, 'overrides'), docId),
         {
-          customerId: idToUse,
+          customerId,
           date: dateStr,
           status: 'delivered',
-          items: customerData.dailyDeliveryItems || [],
+          items: customerData.dailyDeliveryItems,
           updatedAt: Timestamp.now(),
         }
       );
-      alert('Marked as delivered!');
+      // TODO: replace with toast
+      console.log('Marked as delivered!');
+      setOverridesMap((prev) => ({
+        ...prev,
+        [dateStr]: {
+          customerId,
+          date: dateStr,
+          status: 'delivered',
+          items: customerData.dailyDeliveryItems,
+          updatedAt: Timestamp.now(),
+        },
+      }));
     } catch (err) {
-      console.error('Error marking as delivered:', err);
-      alert('Failed to mark as delivered.');
+      // TODO: replace with toast
+      console.log('Failed to mark as delivered.');
     }
   };
 
   const handleMarkRejected = async (day) => {
     if (!customerData) {
-      alert('No customer data found!');
+      // TODO: replace with toast
+      console.log('No customer data found!');
       return;
     }
-  
-    const idToUse = customerId || customerData?.id || 'SET_THIS_MANUALLY';
-    const dateStr = `${month}-${String(day).padStart(2, '0')}`;
-    const docId = `${idToUse}_${dateStr}`;
-  
+    const dateStr = getDateStr(day);
+    const docId = `${customerId}_${dateStr}`;
     try {
       await setDoc(
         doc(collection(db, 'overrides'), docId),
         {
-          customerId: idToUse,
+          customerId,
           date: dateStr,
           status: 'skipped',
           items: customerData.dailyDeliveryItems || [],
           updatedAt: Timestamp.now(),
         }
       );
-      alert('Marked as skipped!');
-      // Refresh override state manually if needed
+      // TODO: replace with toast
+      console.log('Marked as skipped!');
       setOverridesMap((prev) => ({
         ...prev,
         [dateStr]: {
-          customerId: idToUse,
+          customerId,
           date: dateStr,
           status: 'skipped',
           items: customerData.dailyDeliveryItems || [],
@@ -159,39 +164,39 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
         },
       }));
     } catch (err) {
-      console.error('Error marking as skipped:', err);
-      alert('Failed to mark as skipped.');
+      // TODO: replace with toast
+      console.log('Failed to mark as skipped.');
     }
   };
 
   const handleGenerateBill = async () => {
     if (!customerId || !month) {
-      alert("Missing customer ID or month.");
+      // TODO: replace with toast
+      console.log("Missing customer ID or month.");
       return;
     }
-  
     const startDate = `${month}-01`;
     const endDate = `${month}-${String(dayjs(month + '-01').daysInMonth()).padStart(2, '0')}`;
-  
     setIsGeneratingBill(true);
     try {
       const bill = await generateBillForCustomer(customerId, startDate, endDate);
       if (bill) {
-        alert("Bill generated successfully!");
-        setGeneratedBill(bill);
+        // TODO: replace with toast
+        console.log("Bill generated successfully!");
       } else {
-        alert("No new billable deliveries found.");
+        // TODO: replace with toast
+        console.log("No new billable deliveries found.");
       }
     } catch (err) {
-      console.error("Failed to generate bill:", err);
-      alert("Failed to generate bill.");
+      // TODO: replace with toast
+      console.log("Failed to generate bill.");
     } finally {
       setIsGeneratingBill(false);
     }
   };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
-      {/* Show customer and month-year heading if available */}
       {(customer || month) && (
         <div className="mb-4 text-center">
           {customer && (
@@ -202,7 +207,7 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
           )}
         </div>
       )}
-    
+
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <input
           type="text"
@@ -217,30 +222,29 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
           onChange={(e) => setMonth(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-[#2D2D2D] focus:ring-2 focus:ring-[#2D2D2D] transition-all duration-200"
         />
-            <button
-              onClick={handleGenerateBill}
-              disabled={isGeneratingBill}
-              className="px-4 py-2 bg-[#2D2D2D] text-white rounded-md shadow hover:bg-[#444] transition disabled:opacity-50"
-            >
-              {isGeneratingBill ? 'Generating Bill...' : 'Generate Bill'}
-            </button>
-            <button
-                className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
-                onClick={() => router.push(`/bills?customerId=${customerId}`)}
-              >
-                💳 View Bills
-              </button>
+        <button
+          onClick={handleGenerateBill}
+          disabled={isGeneratingBill}
+          className="px-4 py-2 bg-[#2D2D2D] text-white rounded-md shadow hover:bg-[#444] transition disabled:opacity-50"
+        >
+          {isGeneratingBill ? 'Generating Bill...' : 'Generate Bill'}
+        </button>
+        <button
+          className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+          onClick={() => router.push(`/bills?customerId=${customerId}`)}
+        >
+          💳 View Bills
+        </button>
       </div>
 
       <div className="mt-2">
-        {/* Weekday headers */}
         {isLoadingOverrides ? (
-            <div>Loading...</div>
-                 ) : Object.keys(overridesMap).length > 0 ? (
-        <div>Overrides Loaded</div>
+          <div>Loading...</div>
+        ) : Object.keys(overridesMap).length > 0 ? (
+          <div>Overrides Loaded</div>
         ) : (
-            <div>No Overrides</div>
-            )}
+          <div>No Overrides</div>
+        )}
 
         <div className="grid grid-cols-7 gap-px mb-1">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((wd) => (
@@ -249,9 +253,7 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
             </div>
           ))}
         </div>
-        {/* Calendar days grid */}
         <div className="grid grid-cols-7 gap-px bg-gray-100">
-          {/* Add empty divs for days before the 1st of the month */}
           {(() => {
             const firstDayOfWeek = dayjs(month + '-01').day();
             return Array.from({ length: firstDayOfWeek }).map((_, i) => (
@@ -259,38 +261,34 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
             ));
           })()}
           {days.map((day) => {
-            const isToday = dayjs().isSame(dayjs(`${month}-${String(day).padStart(2, '0')}`), 'day');
-            const dateStr = `${month}-${String(day).padStart(2, '0')}`;
+            const isToday = dayjs().isSame(dayjs(getDateStr(day)), 'day');
+            const dateStr = getDateStr(day);
             const override = overridesMap[dateStr];
-            const thisDate = dayjs(dateStr);
-            const currentDate = dayjs();
-            const isPastOrToday = thisDate.isSame(currentDate, 'day') || thisDate.isBefore(currentDate, 'day');
-            let dayBg = '';
-            if (override?.status === 'delivered') dayBg = 'bg-green-100';
-            else if (override?.status === 'skipped') dayBg = 'bg-red-100';
 
             return (
               <div
                 key={day}
-                className={`relative bg-white border border-gray-200 min-w-[90px] min-h-[90px] flex flex-col items-center justify-start p-1 transition-colors duration-150 hover:bg-gray-50 ${isToday ? 'border-blue-500' : ''} ${dayBg}`}
+                className={`relative bg-white border border-gray-200 min-w-[90px] min-h-[90px] flex flex-col items-center justify-start p-1 transition-colors duration-150 hover:bg-gray-50 ${isToday ? 'border-blue-500' : ''} ${override?.status === 'delivered' ? 'bg-green-100' : override?.status === 'skipped' ? 'bg-red-100' : ''}`}
               >
                 {override?.status}
                 <span className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{day}</span>
                 <div className="flex flex-row gap-1 items-center mt-auto mb-1">
-                <button
-                  type="button"
-                  onClick={() => handleMarkDelivered(day)}
-                  className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors duration-150"
-                >
-                  ✅
-                </button>
                   <button
-                   type="button"
-                   onClick={() => handleMarkRejected(day)}
-                   className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150"
+                    type="button"
+                    onClick={() => handleMarkDelivered(day)}
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors duration-150"
+                    disabled={override?.status === 'delivered'}
                   >
-                  ❌
-                 </button>
+                    ✅
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkRejected(day)}
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors duration-150"
+                    disabled={override?.status === 'skipped'}
+                  >
+                    ❌
+                  </button>
                   <button
                     type="button"
                     className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 transition-colors duration-150"
