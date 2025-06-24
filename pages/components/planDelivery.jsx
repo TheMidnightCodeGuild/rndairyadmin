@@ -3,6 +3,9 @@ import dayjs from 'dayjs';
 import { useRouter } from 'next/router';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, setDoc, doc, Timestamp, query, where } from 'firebase/firestore';
+import { generateBillForCustomer } from '@/utils/generateBill';
+import { getDoc } from 'firebase/firestore';
+import CustomerBills from './customerBills';
 
 export default function DeliveryPlanner({ customerName, selectedMonth }) {
   const router = useRouter();
@@ -12,6 +15,8 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
   const [overridesMap, setOverridesMap] = useState({});
   const [customerData, setCustomerData] = useState(null);
   const [isLoadingOverrides, setIsLoadingOverrides] = useState(true);
+  const [generatedBill, setGeneratedBill] = useState(null);
+  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
   const [customer, setCustomer] = useState('');
   // Read from query params if available
   useEffect(() => {
@@ -76,23 +81,26 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
 
   useEffect(() => {
     const fetchCustomer = async () => {
-      if (!customer || customerId) return;
-      const snapshot = await getDocs(collection(db, 'Customers'));
-      const found = snapshot.docs.find(
-        doc => doc.data().customerName?.toLowerCase() === customer.toLowerCase()
-      );
-      if (found) {
-        setCustomerData({ ...found.data(), id: found.id });
+      if (!customerId) return;
+  
+      const customerRef = doc(db, 'Customers', customerId);
+      const snap = await getDoc(customerRef);
+      if (snap.exists()) {
+        setCustomerData({ id: snap.id, ...snap.data() });
       } else {
-        setCustomerData(null);
+        console.warn('Customer not found');
       }
     };
     fetchCustomer();
-  }, [customer]);
+  }, [customerId]);
 
   const handleMarkDelivered = async (day) => {
     if (!customerData) {
       alert('No customer data found!');
+      return;
+    }
+    if (!customerData.dailyDeliveryItems || customerData.dailyDeliveryItems.length === 0) {
+      alert('No daily items found for this customer.');
       return;
     }
     // You may need to manually set the customerId if not present in customerData
@@ -156,6 +164,31 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
     }
   };
 
+  const handleGenerateBill = async () => {
+    if (!customerId || !month) {
+      alert("Missing customer ID or month.");
+      return;
+    }
+  
+    const startDate = `${month}-01`;
+    const endDate = `${month}-${String(dayjs(month + '-01').daysInMonth()).padStart(2, '0')}`;
+  
+    setIsGeneratingBill(true);
+    try {
+      const bill = await generateBillForCustomer(customerId, startDate, endDate);
+      if (bill) {
+        alert("Bill generated successfully!");
+        setGeneratedBill(bill);
+      } else {
+        alert("No new billable deliveries found.");
+      }
+    } catch (err) {
+      console.error("Failed to generate bill:", err);
+      alert("Failed to generate bill.");
+    } finally {
+      setIsGeneratingBill(false);
+    }
+  };
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Show customer and month-year heading if available */}
@@ -169,6 +202,7 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
           )}
         </div>
       )}
+    
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <input
           type="text"
@@ -183,6 +217,19 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
           onChange={(e) => setMonth(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-[#2D2D2D] focus:ring-2 focus:ring-[#2D2D2D] transition-all duration-200"
         />
+            <button
+              onClick={handleGenerateBill}
+              disabled={isGeneratingBill}
+              className="px-4 py-2 bg-[#2D2D2D] text-white rounded-md shadow hover:bg-[#444] transition disabled:opacity-50"
+            >
+              {isGeneratingBill ? 'Generating Bill...' : 'Generate Bill'}
+            </button>
+            <button
+                className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+                onClick={() => router.push(`/bills?customerId=${customerId}`)}
+              >
+                💳 View Bills
+              </button>
       </div>
 
       <div className="mt-2">
@@ -230,13 +277,13 @@ export default function DeliveryPlanner({ customerName, selectedMonth }) {
                 {override?.status}
                 <span className={`text-sm font-semibold mb-1 ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{day}</span>
                 <div className="flex flex-row gap-1 items-center mt-auto mb-1">
-                  <button
-                    type="button"
-                    disabled
-                    className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400 border border-gray-300 cursor-not-allowed"
-                  >
-                    ✅
-                  </button> 
+                <button
+                  type="button"
+                  onClick={() => handleMarkDelivered(day)}
+                  className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors duration-150"
+                >
+                  ✅
+                </button>
                   <button
                    type="button"
                    onClick={() => handleMarkRejected(day)}
