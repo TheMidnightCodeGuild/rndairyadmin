@@ -64,38 +64,31 @@ export async function generateBillForCustomer(customerId, startDate, endDate) {
     }
 
     // 3. Build itemsBreakdown and calculate totalAmount
-    const itemsBreakdown = [];
-    let totalAmount = 0;
+const itemsBreakdown = [];
+let totalAmount = 0;
 
-    for (const override of filteredOverrides) {
-      if (!Array.isArray(override.items)) {
-        console.log('Override has no items array:', override);
-        continue;
-      }
-      for (const item of override.items) {
-        // Get current price from Items collection
-        const itemSnap = await getDoc(doc(db, 'Items', item.itemId));
-        if (!itemSnap.exists()) {
-          console.log('Item not found in Items collection:', item.itemId);
-          continue;
-        }
-        const itemData = itemSnap.data();
-        const price = itemData.price || 0;
-        const quantity = item.quantity || 1;
-        const total = price * quantity;
+for (const override of filteredOverrides) {
+  if (!Array.isArray(override.items)) {
+    console.log('Override has no items array:', override);
+    continue;
+  }
+  for (const item of override.items) {
+    const price = item.ratePerUnit || 0;
+    const quantity = item.quantity || 1;
+    const total = price * quantity;
 
-        itemsBreakdown.push({
-          date: override.date,
-          itemId: item.itemId,
-          itemName: item.itemName || itemData.name || '',
-          quantity,
-          price,
-          total,
-        });
+    itemsBreakdown.push({
+      date: override.date,
+      itemId: item.itemId,
+      itemName: item.itemName || '',
+      quantity,
+      price,
+      total,
+    });
 
-        totalAmount += total;
-      }
-    }
+    totalAmount += total;
+  }
+}
 
     console.log('Final itemsBreakdown:', itemsBreakdown);
 

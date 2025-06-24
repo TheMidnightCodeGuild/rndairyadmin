@@ -91,30 +91,34 @@ export default function DeliveryPlanner({ selectedMonth }) {
   }, [customerData, customerId]);
 
   const handleMarkDelivered = async (day) => {
-    if (!customerData) {
-      // TODO: replace with toast
-      console.log('No customer data found!');
-      return;
-    }
-    if (!customerData.dailyDeliveryItems || customerData.dailyDeliveryItems.length === 0) {
-      // TODO: replace with toast
-      console.log('No daily items found for this customer.');
-      return;
-    }
+    if (!customerData) return;
+  
     const dateStr = getDateStr(day);
     const docId = `${customerId}_${dateStr}`;
+  
     try {
-      await setDoc(
-        doc(collection(db, 'overrides'), docId),
-        {
-          customerId,
-          date: dateStr,
-          status: 'delivered',
-          items: customerData.dailyDeliveryItems,
-          updatedAt: Timestamp.now(),
-        }
+      // 1. Build enriched items with price
+      const enrichedItems = await Promise.all(
+        (customerData.dailyDeliveryItems || []).map(async (item) => {
+          const itemRef = doc(db, 'Items', item.itemId);
+          const itemSnap = await getDoc(itemRef);
+          const itemData = itemSnap.exists() ? itemSnap.data() : {};
+          return {
+            ...item,
+            ratePerUnit: itemData.ratePerUnit || 0
+          };
+        })
       );
-      // TODO: replace with toast
+  
+      // 2. Save with enriched items
+      await setDoc(doc(collection(db, 'overrides'), docId), {
+        customerId,
+        date: dateStr,
+        status: 'delivered',
+        items: enrichedItems,
+        updatedAt: Timestamp.now(),
+      });
+  
       console.log('Marked as delivered!');
       setOverridesMap((prev) => ({
         ...prev,
@@ -122,36 +126,42 @@ export default function DeliveryPlanner({ selectedMonth }) {
           customerId,
           date: dateStr,
           status: 'delivered',
-          items: customerData.dailyDeliveryItems,
+          items: enrichedItems,
           updatedAt: Timestamp.now(),
         },
       }));
     } catch (err) {
-      // TODO: replace with toast
-      console.log('Failed to mark as delivered.');
+      console.log('Failed to mark as delivered.', err);
     }
   };
 
   const handleMarkRejected = async (day) => {
-    if (!customerData) {
-      // TODO: replace with toast
-      console.log('No customer data found!');
-      return;
-    }
+    if (!customerData) return;
+  
     const dateStr = getDateStr(day);
     const docId = `${customerId}_${dateStr}`;
+  
     try {
-      await setDoc(
-        doc(collection(db, 'overrides'), docId),
-        {
-          customerId,
-          date: dateStr,
-          status: 'skipped',
-          items: customerData.dailyDeliveryItems || [],
-          updatedAt: Timestamp.now(),
-        }
+      const enrichedItems = await Promise.all(
+        (customerData.dailyDeliveryItems || []).map(async (item) => {
+          const itemRef = doc(db, 'Items', item.itemId);
+          const itemSnap = await getDoc(itemRef);
+          const itemData = itemSnap.exists() ? itemSnap.data() : {};
+          return {
+            ...item,
+            ratePerUnit: itemData.ratePerUnit || 0
+          };
+        })
       );
-      // TODO: replace with toast
+  
+      await setDoc(doc(collection(db, 'overrides'), docId), {
+        customerId,
+        date: dateStr,
+        status: 'skipped',
+        items: enrichedItems,
+        updatedAt: Timestamp.now(),
+      });
+  
       console.log('Marked as skipped!');
       setOverridesMap((prev) => ({
         ...prev,
@@ -159,13 +169,12 @@ export default function DeliveryPlanner({ selectedMonth }) {
           customerId,
           date: dateStr,
           status: 'skipped',
-          items: customerData.dailyDeliveryItems || [],
+          items: enrichedItems,
           updatedAt: Timestamp.now(),
         },
       }));
     } catch (err) {
-      // TODO: replace with toast
-      console.log('Failed to mark as skipped.');
+      console.log('Failed to mark as skipped.', err);
     }
   };
 
